@@ -7,6 +7,8 @@ output: html_document
 
 ```{r}
 library(tidyverse)
+library(modelr)
+library(mgcv)
 set.seed(1)
 ```
 # Problem 2
@@ -88,5 +90,24 @@ bootstrap_result_tidy|>
     )
 ```
 # Problem 3
+Load and clean the data
 ```{r}
+
+birthweight=
+  read_csv("data/birthweight.csv")
+
+birthweight |> 
+  ggplot(aes(x=blength, y=bwt)) + 
+  geom_point(alpha = .5)
+
+train_df = sample_n(bwt_df, 80)
+
+
+linear_mod = lm(bwt ~ blength, data = birthweight)
+
+train_df |> 
+  add_predictions(linear_mod) |> 
+  add_residuals(linear_mod)|>
+  ggplot(aes(x =blength , y =bwt )) + geom_point() + 
+  geom_line(aes(y = pred), color = "red")
 ```
