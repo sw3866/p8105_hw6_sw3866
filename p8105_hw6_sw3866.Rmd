@@ -73,6 +73,12 @@ bootstrap_result_glance |>
     ci_lower = quantile(r.squared, 0.025), 
     ci_upper = quantile(r.squared, 0.975))
 
+bootstrap_result_tidy|>
+  mutate(v=log10(tmin*prcp))|>
+  summarize(
+    ci_lower_v = quantile(v, 0.025,na.rm = TRUE), 
+    ci_upper_v = quantile(v, 0.975,na.rm = TRUE)
+    )
 
 
 ```
