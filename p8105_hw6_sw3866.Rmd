@@ -1,0 +1,84 @@
+---
+title: "Homework 6"
+author: "Siyan Wen"
+date: "2023-11-30"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+set.seed(1)
+```
+# Problem 2
+Download the data.
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2022-01-01",
+    date_max = "2022-12-31") |>
+  mutate(
+    name = recode(id, USW00094728 = "CentralPark_NY"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) |>
+  select(name, id, everything())
+```
+Bootstrap and SLR 
+```{r}
+bootstrap_result_glance=
+  weather_df|>
+  modelr::bootstrap(n = 5000) |> 
+  mutate(
+    models = map(strap, \(df) lm(tmax ~ tmin +prcp , data = df)),
+    results = map(models, broom::glance)) |> 
+  select(results) |> 
+  unnest(results)
+  
+
+bootstrap_result_tidy=
+  weather_df|>
+  modelr::bootstrap(n = 5000) |> 
+  mutate(
+    models = map(strap, \(df) lm(tmax ~ tmin +prcp , data = df)),
+    results = map(models, broom::tidy)) |> 
+  select(results) |> 
+  unnest(results)|>
+  select(term,estimate)|>
+  pivot_wider(
+    names_from=term,
+    values_from=estimate
+  )|>
+  unnest()
+
+```
+Show distribution
+```{r}
+r.squared_distribution=
+  bootstrap_result_glance|>
+  ggplot(aes(x = r.squared)) + geom_density()
+print(r.squared_distribution)
+
+log_distribution=
+  bootstrap_result_tidy|>
+  mutate(v=log10(tmin*prcp))|>
+  ggplot(aes(x = v)) + geom_density()
+
+print(log_distribution)
+```
+Confidence interval
+```{r}
+bootstrap_result_glance |> 
+  summarize(
+    ci_lower = quantile(r.squared, 0.025), 
+    ci_upper = quantile(r.squared, 0.975))
+
+log_distribution|>
+  summarize(
+    ci_lower_v = quantile(v, 0.025,na.rm = TRUE), 
+    ci_upper_v = quantile(v, 0.975,na.rm = TRUE)
+    )
+```
+# Problem 3
+```{r}
+```
