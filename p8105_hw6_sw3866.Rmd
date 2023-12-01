@@ -61,8 +61,8 @@ print(r.squared_distribution)
 
 log_distribution=
   bootstrap_result_tidy|>
-  mutate(v=log10(tmin*prcp))|>
-  ggplot(aes(x = v)) + geom_density()
+  mutate(log.value=log10(tmin*prcp))|>
+  ggplot(aes(x = log.value)) + geom_density()
 
 print(log_distribution)
 ```
@@ -74,13 +74,11 @@ bootstrap_result_glance |>
     ci_upper = quantile(r.squared, 0.975))
 
 bootstrap_result_tidy|>
-  mutate(v=log10(tmin*prcp))|>
+  mutate(log.value=log10(tmin*prcp))|>
   summarize(
-    ci_lower_v = quantile(v, 0.025,na.rm = TRUE), 
-    ci_upper_v = quantile(v, 0.975,na.rm = TRUE)
+    ci_lower_log.value = quantile(log.value, 0.025,na.rm = TRUE), 
+    ci_upper_log.value = quantile(log.value, 0.975,na.rm = TRUE)
     )
-
-
 ```
 # Problem 3
 ```{r}
