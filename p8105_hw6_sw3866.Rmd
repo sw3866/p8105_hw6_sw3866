@@ -10,7 +10,7 @@ library(tidyverse)
 set.seed(1)
 ```
 # Problem 2
-Download the data.
+#### Download the data.
 ```{r}
 weather_df = 
   rnoaa::meteo_pull_monitors(
@@ -24,7 +24,7 @@ weather_df =
     tmax = tmax / 10) |>
   select(name, id, everything())
 ```
-Bootstrap and SLR 
+#### Bootstrap and SLR 
 ```{r}
 bootstrap_result_glance=
   weather_df|>
@@ -52,7 +52,7 @@ bootstrap_result_tidy=
   unnest()
 
 ```
-Show distribution
+#### Show distribution
 ```{r}
 r.squared_distribution=
   bootstrap_result_glance|>
@@ -66,11 +66,14 @@ log_distribution=
 
 print(log_distribution)
 ```
+
+**Description:**
+
 The distribution of "r.squared" exhibits a notable heavy tail extending to low values. Additionally, there is a slight bump in the distribution, possibly the features mentioned above indicating occasional occurrences of larger outliers within the bootstrap samples. 
 
 The distribution of "log" exhibits a even more notable heavy tail extending to the low values. This is an uni-modal and left/negative skewed distribution. This shows a tendency for the majority of values to cluster on the right side, with a tail extending towards the lower values.
 
-Confidence interval
+#### Confidence interval
 ```{r}
 bootstrap_result_glance |> 
   summarize(
