@@ -90,24 +90,89 @@ bootstrap_result_tidy|>
     )
 ```
 # Problem 3
-Load and clean the data
+
+#### Load and clean the data
 ```{r}
-
 birthweight=
-  read_csv("data/birthweight.csv")
+  read_csv("data/birthweight.csv")|>
+  janitor::clean_names()|>
+  select(bwt,blength,gaweeks,bhead,babysex,mrace)|>
+  mutate(babysex=as.factor(babysex))
 
+# Check for missing data
+missing_data_summary=
+  birthweight|>
+  summarise_all(~ sum(is.na(.))) |>
+  gather(key = "variable", value = "missing_count") |>
+  filter(missing_count > 0)
+print(missing_data_summary)
+```
+Based on the results from `Check for missing data`, there is no missing data in the remaining dataset of interest. 
+
+#### My SLR Model
+From my point of view, baby's birthweight involves considering various factors that may influence it including baby’s length at birth and baby's head  circumference at birth. 
+To explore my SLR model, let's first take a look at the distribution of birthweight with each of factor of interest. 
+```{r}
 birthweight |> 
   ggplot(aes(x=blength, y=bwt)) + 
   geom_point(alpha = .5)
 
-train_df = sample_n(bwt_df, 80)
+birthweight |> 
+  ggplot(aes(x=bhead, y=bwt)) + 
+  geom_point(alpha = .5)
+```
 
+According to the scatterplots of the distribution above, we can see that there might be linear relationship between baby's birthweight with baby's length and baby's birthweight with baby's head  circumference. Therefore, my simple linear regression will be like this
+```{r}
+linear_own = lm(bwt ~ blength+bhead, data = birthweight)
+```
 
-linear_mod = lm(bwt ~ blength, data = birthweight)
+#### Plot of Model Residuals against Fitted Values
+```{r}
+birthweight|> 
+  add_predictions(linear_own) |> 
+  add_residuals(linear_own)|>
+  ggplot(aes(x = pred, y = resid) ) + geom_point(color="red")+
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+  labs(title = "Residuals vs Fitted Values",
+       x = "Fitted Values",
+       y = "Residuals")
+```
 
-train_df |> 
-  add_predictions(linear_mod) |> 
-  add_residuals(linear_mod)|>
-  ggplot(aes(x =blength , y =bwt )) + geom_point() + 
-  geom_line(aes(y = pred), color = "red")
+#### Two other models
+```{r}
+model2 <- lm(bwt ~ blength + gaweeks, data = birthweight)
+model3 <- lm(bwt ~ bhead * blength * babysex, data = birthweight)
+```
+
+#### Cross Validation
+```{r}
+cv_df =
+  crossv_mc(birthweight, 80) |> 
+  mutate(
+    train = map(train, as_tibble),
+    test = map(test, as_tibble))
+cv_df = 
+  cv_df |> 
+  mutate(
+    linear_own  = map(train, \(df) lm(bwt ~ blength+bhead, data = df)),
+    model2    = map(train, \(df) lm(bwt ~ blength + gaweeks, data = df)),
+    model3  = map(train, \(df) lm(bwt ~ bhead * blength * babysex, data = df))) |> 
+  mutate(
+    rmse_linear_own = map2_dbl(linear_own, test, \(mod, df) rmse(model = mod, data = df)),
+    rmse_model2    = map2_dbl(model2, test, \(mod, df) rmse(model = mod, data = df)),
+    rmse_model3 = map2_dbl(model3, test, \(mod, df) rmse(model = mod, data = df)))
+```
+
+Finally, plot the prediction error distribution for each candidate model.
+```{r}
+cv_df |> 
+  select(starts_with("rmse")) |> 
+  pivot_longer(
+    everything(),
+    names_to = "model", 
+    values_to = "rmse",
+    names_prefix = "rmse_") |> 
+  mutate(model = fct_inorder(model)) |> 
+  ggplot(aes(x = model, y = rmse)) + geom_violin()
 ```
